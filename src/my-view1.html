@@ -16,7 +16,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <style include="shared-styles">
       :host {
         display: block;
-
         padding: 10px;
       }
     </style>
@@ -24,6 +23,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <div class="card">
       <div class="circle">1</div>
       <h1>View One</h1>
+      <p>Hi [[ userData.name ]]</p>
       <p>Ut labores minimum atomorum pro. Laudem tibique ut has.</p>
       <p>Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Cu mei vide viris gloriatur, at populo eripuit sit.</p>
     </div>
@@ -31,7 +31,36 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   <script>
     class MyView1 extends Polymer.Element {
-      static get is() { return 'my-view1'; }
+      static get is() {
+        return 'my-view1';
+      }
+
+
+      static get properties() {
+        return {
+          pageActive: {
+            type: String,
+            reflectToAttribute: true,
+            observer: '_pageActive'
+          },
+          userData: {
+            type: Object
+          }
+        };
+      }
+
+      _pageActive() {
+        var thisUserData = document.querySelector('my-app').loggedUserData;
+        this.userId = thisUserData.uid;
+        //var ref = firebase.database().ref("users/" + this.userId).child("NoteList").child(id);
+        var ref = firebase.database().ref("users/" + this.userId);
+        ref.once("value")
+          .then(function(snapshot) {
+            var data = snapshot.val();
+            this.userData = data;
+          }.bind(this));
+      }
+
     }
 
     window.customElements.define(MyView1.is, MyView1);

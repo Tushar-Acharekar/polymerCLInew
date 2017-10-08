@@ -10,18 +10,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 <link rel="import" href="shared-styles.html">
-
-
-	<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
-	<link rel="import" href="../bower_components/paper-card/paper-card.html">
-	<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
-	<link rel="import" href="../bower_components/paper-button/paper-button.html">
-	<link rel="import" href="../bower_components/paper-input/paper-input.html">
-	<link rel="import" href="../bower_components/paper-item/paper-item.html">
-	<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
-	
-	
-	<script src="https://www.gstatic.com/firebasejs/3.6.6/firebase.js"></script>
 	
 <dom-module id="my-login">
   <template>
@@ -89,21 +77,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         };
       }
       
-      connectedCallback() {
-        super.connectedCallback();
-        console.log('my-login created!');
-        var config = {
-          apiKey: "AIzaSyCS2aFGvqBAvh5jWrxztKaE0YhtxI7ewx8",
-          authDomain: "tushardb-87fc8.firebaseapp.com",
-          databaseURL: "https://tushardb-87fc8.firebaseio.com",
-          projectId: "tushardb-87fc8",
-          storageBucket: "tushardb-87fc8.appspot.com",
-          messagingSenderId: "501594027611"
-        };
-        firebase.initializeApp(config);
-      }
-      
-      attributeChangedCallback(){}
+      // attributeChangedCallback(){}
+      // connectedCallback(){}
       
       _userNameChanged(page) {
         console.log(this.username);
@@ -114,8 +89,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.$.name.setAttribute("class", "hidden");
           this.$.myFile.setAttribute("class", "hidden");
           firebase.auth().signInWithEmailAndPassword(this.username, this.password).then(function(user) {
-          document.querySelector('my-app').page = 'view1';
-          
+            document.querySelector('my-app').loggedUserData = user;
+            document.querySelector('my-app').page = 'view1';
           }).catch(function(error) {
             if (error.code === 'auth/wrong-password') {
               console.log('Wrong password.');

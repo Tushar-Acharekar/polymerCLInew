@@ -22,11 +22,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="my-icons.html">
 
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+
 <link rel="lazy-import" href="my-login.html">
 <link rel="lazy-import" href="my-view1.html">
 <link rel="lazy-import" href="my-view2.html">
 <link rel="lazy-import" href="my-view3.html">
 <link rel="lazy-import" href="my-view404.html">
+
+	<script src="https://www.gstatic.com/firebasejs/3.6.6/firebase.js"></script>
 
 <dom-module id="my-app">
   <template>
@@ -47,11 +57,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         --paper-icon-button-ink-color: white;
       }
 
-      .drawer-list {
+      #ironSelector {
         margin: 0 20px;
       }
 
-      .drawer-list a {
+      #ironSelector a {
         display: block;
         padding: 0 16px;
         text-decoration: none;
@@ -59,22 +69,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         line-height: 40px;
       }
 
-      .drawer-list a.iron-selected {
+      #ironSelector a.iron-selected {
         color: black;
         font-weight: bold;
       }
       
       /*.....to hide menu button.....*/
-      :host(.onLogin) .menuIcon{display:none;}
+      :host .onLogin{display:none;}
       
-      :host(.removeMenu) .menuIcon{display:none;}
+      :host(.removeMenu) #menuIcon{display:none;}
       
       .hideDrawerLayout{--app-drawer-width: 0px;}
       
-      /*.hideIronSelector{visibility:hidden;}*/
+      .hideIronSelector{visibility:hidden;}
       
       :host iron-pages{margin-top: 64px;}
-       
+      
     </style>
 
     <app-location route="{{route}}" url-space-regex="^[[rootPath]]"></app-location>
@@ -87,7 +97,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <app-header-layout has-scrolling-region>
         <app-header slot="header" condenses reveals effects="waterfall">
           <app-toolbar>
-            <paper-icon-button class="menuIcon" icon="my-icons:menu" on-click="_toggleDrawer"></paper-icon-button>
+            <paper-icon-button id="menuIcon" icon="my-icons:menu" on-click="_toggleDrawer"></paper-icon-button>
             <div main-title>My App</div>
           </app-toolbar>
         </app-header>
@@ -96,7 +106,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		  <!-- Drawer content -->
 		  <app-drawer id="drawer" slot="drawer" swipe-open="[[narrow]]" on-opened-changed="_forDraweropenedChange">
 			<app-toolbar>Menu</app-toolbar>
-			<iron-selector id="ironSelector" selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+			<iron-selector id="ironSelector" selected="[[page]]" attr-for-selected="name" role="navigation">
 			  <a name="view1" href="[[rootPath]]view1">View One</a>
 			  <a name="view2" href="[[rootPath]]view2">View Two</a>
 			  <a name="view3" href="[[rootPath]]view3">View Three</a>
@@ -109,7 +119,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             fallback-selection="view404"
             role="main">
           <my-login name="login"></my-login>
-          <my-view1 name="view1"></my-view1>
+          <my-view1 id="view1" name="view1"></my-view1>
           <my-view2 name="view2"></my-view2>
           <my-view3 name="view3"></my-view3>
           <my-view404 name="view404"></my-view404>
@@ -127,7 +137,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           page: {
             type: String,
             reflectToAttribute: true,
-            observer: '_pageChanged',
+            observer: '_pageChanged'
+          },
+          firebasAutheObject: {
+            type: Object,
+             value: function() {
+              var config = {
+                apiKey: "AIzaSyCS2aFGvqBAvh5jWrxztKaE0YhtxI7ewx8",
+                authDomain: "tushardb-87fc8.firebaseapp.com",
+                databaseURL: "https://tushardb-87fc8.firebaseio.com",
+                projectId: "tushardb-87fc8",
+                storageBucket: "tushardb-87fc8.appspot.com",
+                messagingSenderId: "501594027611"
+              };
+              firebase.initializeApp(config);               
+              return {};
+            }
+          }, 
+          loggedUserData: {
+            type: Object,
+            observer: '_loggedSuccess',
           },
           routeData: Object,
           subroute: String,
@@ -143,22 +172,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         ];
       }
       
+      _loggedSuccess(){
+        console.log(this.loggedUserData);
+      }
 
       _routePageChanged(page) {
         // If no page was found in the route data, page will be an empty string.
         // Deault to 'view1' in that case.
         this.page = page || 'view1';
         
-        if(this.page == "view1"){
-          this.set('route.path', '/login');
-        }
-        
         // Close a non-persistent drawer when the page & route are changed.
         if (!this.$.drawer.persistent) {
           this.$.drawer.close();
         }
-
       }
+
 
       _pageChanged(page) {
         // Load page import on demand. Show 404 page if fails
@@ -167,41 +195,57 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             
         ////////////hide drawer for login page//////
        if(this.page == "login"){
-           this.setAttribute("class", "onLogin");
-          // this.$.ironSelector.setAttribute("class", "hideIronSelector");
+           this.$.menuIcon.setAttribute("class", "onLogin");
+           this.$.ironSelector.setAttribute("class", "hideIronSelector");           
            this.$.drawer.close();
            this.$.drawerLayout.setAttribute("class", "hideDrawerLayout");
         }
         else{
-          this.removeAttribute("class", "onLogin");
-          // this.$.ironSelector.removeAttribute("class", "hideIronSelector");
-          if(!this.$.drawerLayout.narrow){
-            this.$.drawer.open();
-          }
+          this.$.menuIcon.removeAttribute("class", "onLogin");
+          this.$.ironSelector.removeAttribute("class", "hideIronSelector");
+          if(!this.$.drawerLayout.narrow){this.$.drawer.open();}
           this.$.drawerLayout.removeAttribute("class", "hideDrawerLayout");
         }
-      }
-      
-      _showPage404() {
-        this.page = 'login';
+        this._forRemoveMenu();
+        
+        if(this.page == "view1"){
+          this.$.view1.pageActive = "view1";
+        }
+        else{
+          this.$.view1.pageActive = "other";
+        }
       }
 
+
+      ////////////for Drawer opened Change event//////////////
       _forDraweropenedChange(){
         if(this.page == "login" && this.$.drawer.opened == true){
           this.$.drawer.close();
          }
-         ////////////hide menu for login page and for persistent//////
+        this._forRemoveMenu();
+      }
+  
+
+      ////////////hide menu for login page and for persistent//////
+      _forRemoveMenu(){
         if(!this.$.drawerLayout.narrow){
           this.setAttribute("class", "removeMenu");
          }
         else{
           this.removeAttribute("class", "removeMenu");
-        }
+        }        
       }
-      
+  
+
+      ////////////for toggling Drawer//////////////
       _toggleDrawer(){
         this.$.drawer.toggle();
       }
+  
+
+      _showPage404() {
+        this.page = 'login';
+      }      
       
     }
 
