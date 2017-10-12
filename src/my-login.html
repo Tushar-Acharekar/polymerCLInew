@@ -14,6 +14,33 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <dom-module id="my-login">
   <template>
     <style include="shared-styles">
+      @keyframes hideDiv {
+        0% {
+           opacity:1;
+           height:120px;
+        }
+        100% {
+          opacity:0;
+      	  height:0px;
+      	  display:none;
+        }
+      }
+      .hideDiv {animation: hideDiv 500ms cubic-bezier(0.215, 0.610, 0.355, 1.000) both;}
+      
+      @keyframes showDiv {
+        0% {
+         opacity:0;
+         height:0px;
+        }
+        100% {
+      	 opacity:1;
+      	 height:120px;
+        }
+      }
+      .showDiv {animation: showDiv 500ms cubic-bezier(0.215, 0.610, 0.355, 1.000) both;}    
+    
+      /*-----------------------------------------------end animation----------------------*/
+      
       :host {
         display: block;
         padding: 10px;
@@ -22,7 +49,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       :host .loginHost{
           display: flex;
           width: 100%;
-          height: 85vh;
+          min-height: 85vh;
           align-items: center;
       }
       
@@ -35,19 +62,53 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       :host .card-actions{
     		display: flex;
         justify-content: space-around;
+        margin-top: 14px;  
     	}
     	
-    	:host .hidden{
+    	#signupFields{
+        padding: 0px;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        overflow: hidden;
+    	}
+    	
+    	.initialHideDiv{
     	  display:none;
     	}
+
+    	#myFile{margin-top:24px;}
+    	#name{width: 100%;}
+    	
     </style>
       <div class="loginHost">
 				<paper-card image="images/login.png" alt="Pulse" class="loginPaperCard">
 				  <div class="card-content">
-              <paper-input label="Username" id="email" char-counter required auto-validate error-message="Need Username" autofocus value="{{username}}"></paper-input>
-              <paper-input label="Password" id="password" type="password" auto-validate required error-message="Need Password" value="{{password}}"></paper-input>
-              <paper-input label="Name" id="name" class="hidden" char-counter required auto-validate error-message="Need Name"></paper-input>		
-              <input type="file" id="myFile" class="hidden"  size="50"> 					
+              <paper-input label="Username"
+                    pattern="^[a-zA-Z0-9.!#$%&'*+=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+                    id="email"
+                    char-counter
+                    autoValidate="true"
+                    required error-message="Need Username with @gmail.com"
+                    autofocus
+                    on-value-changed = "_validateThisInput"
+                    value="{{username}}"></paper-input>
+              <paper-input label="Password" id="password" type="password"
+                    required
+                    autoValidate
+                    error-message="Need Password"
+                    on-value-changed = "_validateThisInput"
+                    value="{{password}}"></paper-input>
+              <div id="signupFields" class="initialHideDiv">
+                <paper-input label="Name" id="name" char-counter
+                    autoValidate 
+                    required 
+                    error-message="Need Name" 
+                    on-value-changed = "_validateThisInput">
+                  <emoji-selector suffix></emoji-selector>
+                </paper-input>		
+                <input type="file" id="myFile"  size="50">
+              </div>
 				  </div>
 				  <div class="card-actions">
               <paper-button id="quickstart-sign-in" name="signin" on-click="_signin">Login</paper-button>
@@ -66,14 +127,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return {
           username: {
             type: String,
-            value:"acharekart@gmail.com",
-            reflectToAttribute: true,
-            observer: '_userNameChanged'
+            value: ""
           },
           password: {
             type: String,
-            value:"Pass@123"
-          }
+            value:""
+          },
+          class: {
+            type: String
+          }          
         };
       }
       
@@ -83,35 +145,79 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       _userNameChanged(page) {
         console.log(this.username);
       }
+
       
       _signin() {
           var thisElement = this;
-          this.$.name.setAttribute("class", "hidden");
-          this.$.myFile.setAttribute("class", "hidden");
-          firebase.auth().signInWithEmailAndPassword(this.username, this.password).then(function(user) {
-            document.querySelector('my-app').loggedUserData = user;
-            document.querySelector('my-app').page = 'view1';
-          }).catch(function(error) {
-            if (error.code === 'auth/wrong-password') {
-              console.log('Wrong password.');
-              thisElement.$.loginToast.show("Wrong password.");
-            } 
-            else if (error.code === 'auth/user-not-found') {
-              console.log('user not found, Please SignUP');	
-              thisElement.$.loginToast.show("user not found, Please SignUP");
-            } 		  
-            else {
-              console.log("errorCode :" + error.code);
-              thisElement.$.loginToast.show("errorCode :" + error.code);
+          
+          if(this.$.signupFields.getAttribute("class") == "hideDiv" || this.$.signupFields.getAttribute("class") == "initialHideDiv"){
+            this.validateInput("validate");
+             firebase.auth().signInWithEmailAndPassword(this.username, this.password).then(function(user) {
+                document.querySelector('my-app').loggedUserData = user;
+                document.querySelector('my-app').page = 'view1';
+             }).catch(function(error) {
+               if (error.code === 'auth/wrong-password') {
+                  thisElement.$.loginToast.show("Wrong password.");
+               } 
+               else if (error.code === 'auth/user-not-found') {
+                  thisElement.$.loginToast.show("user not found, Please SignUP");
+               }
+               else if (error.code === 'auth/invalid-email') {
+                  thisElement.$.loginToast.show("\u1F602 Please enter valid email & password");
+               }                
+               else {
+                  thisElement.$.loginToast.show("errorCode :" + error.code);
+               }
+             });             
+          }
+          else if(this.$.signupFields.getAttribute("class") == "showDiv" ){
+            this.validateInput("reset");
+            this.$.signupFields.setAttribute("class", "hideDiv");
+            this.$.email.click();
+          }
+          else{
+            if(this.$.signupFields.getAttribute("class") != "initialHideDiv" ){
+              this.$.signupFields.setAttribute("class", "hideDiv");
             }
-          });
+            else{
+              this.validateInput("validate");
+            }              
+          }
       }
       
-      
       _signup() {
-        this.$.name.removeAttribute("class", "hidden");
-        this.$.myFile.removeAttribute("class", "hidden");
-      }      
+        var tempClass = this.$.signupFields.getAttribute("class");
+        if(tempClass == "hideDiv" || tempClass == "initialHideDiv"){
+           this.$.signupFields.setAttribute("class", "showDiv");
+           this.validateInput("reset");
+        }
+        else{
+            this.validateInput("validate");
+        }
+      }
+      
+      validateInput(flag){
+        var getInput = Polymer.dom(this.root).querySelectorAll('paper-input');
+         for (var i = getInput.length-1; i >= 0 ; i--) {	
+           if(flag == "validate"){
+                getInput[i].validate(true);
+                if(getInput[i].invalid){
+                  getInput[i].focus();
+                }
+           }
+           
+          if(flag == "reset"){
+                getInput[i].value = "";            
+                getInput[i].invalid = false;
+                getInput[i].focus();
+             }
+         }
+      }
+      
+      _validateThisInput(event){
+        event.target.validate(true);
+      } 
+      
     }
     
     window.customElements.define(MyLogin.is, MyLogin);	

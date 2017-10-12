@@ -17,24 +17,44 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       :host {
         display: block;
         padding: 10px;
+        
+      	.deleteData{
+      		 float: right;
+      	}
+      	
+      	.favoriteData[icon=favorite]{
+      		color: #f44336;
+      	}        
       }
     </style>
 
     <div class="card">
       <div class="circle">1</div>
       <h1>View One</h1>
-      <p>Hi [[ userData.name ]]</p>
+      <p>Hi [[ userName ]]</p>
       <p>Ut labores minimum atomorum pro. Laudem tibique ut has.</p>
       <p>Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Cu mei vide viris gloriatur, at populo eripuit sit.</p>
     </div>
+    
+      <template is="dom-repeat" items="{{userData}}" as="report">
+          <paper-card heading="{{report.title}}" image alt="{{report.title}}" id="{{report.id}}" class="card">
+            <div class="card-content">{{report.note}}</div>
+            <div>{{report.favorite}}</div>
+            <div class="card-actions">
+              <paper-icon-button icon="create" class="editData"></paper-icon-button>
+              <paper-icon-button icon="{{report.favorite}}" class="favoriteData"></paper-icon-button>
+              <paper-icon-button icon="content-copy" class="copyData"></paper-icon-button>
+              <paper-icon-button icon="delete" class="deleteData"></paper-icon-button>
+            </div>
+          </paper-card>          
+      </template>
+
   </template>
 
   <script>
     class MyView1 extends Polymer.Element {
-      static get is() {
-        return 'my-view1';
-      }
-
+      static get is() { return 'my-view1'; }
+      
 
       static get properties() {
         return {
@@ -43,12 +63,29 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             reflectToAttribute: true,
             observer: '_pageActive'
           },
+          userName: {
+            type: String
+          },
           userData: {
-            type: Object
+            type: Array,
+            observer: '_updatedUserData'
+          },
+          userId: {
+            type: String
           }
         };
+      }      
+      
+      _updatedUserData(){
+        var parsed = this.userData;
+        var arr = [];
+        for(var x in parsed){
+          arr.push(parsed[x]);
+        }
+        
+        this.userData = arr;
       }
-
+      
       _pageActive() {
         var thisUserData = document.querySelector('my-app').loggedUserData;
         this.userId = thisUserData.uid;
@@ -57,12 +94,31 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         ref.once("value")
           .then(function(snapshot) {
             var data = snapshot.val();
-            this.userData = data;
+            this.userData = data.NoteList;
+            this.userName = data.name;
           }.bind(this));
+      }
+      
+      _toggleFev(id){
+        var thisUserData = document.querySelector('my-app').loggedUserData;
+        this.userId = thisUserData.uid;        
+    			var ref = firebase.database().ref("users/" + this.userId).child("NoteList").child(id);
+    			ref.once("value")
+    				.then(function(snapshot) {
+    					var favoriteDataValue = snapshot.val();
+    					if(favoriteDataValue.favorite == "favorite-border"){
+    						snapshot.ref.update({"favorite": "favorite"});
+    						document.querySelector('paper-toast').show("Added to Favorited");
+    					  }
+    					  else{
+    						 snapshot.ref.update({"favorite": "favorite-border"});
+    					  }
+    			  });
       }
 
     }
-
     window.customElements.define(MyView1.is, MyView1);
   </script>
 </dom-module>
+    				  
+    				  
