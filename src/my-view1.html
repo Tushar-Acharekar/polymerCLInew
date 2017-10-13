@@ -17,15 +17,27 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       :host {
         display: block;
         padding: 10px;
+      }
         
       	.deleteData{
       		 float: right;
       	}
       	
-      	.favoriteData[icon=favorite]{
-      		color: #f44336;
-      	}        
+      	paper-icon-button[icon=favorite-border]{
+      		--paper-icon-button-ink-color: red;
       }
+
+      	paper-icon-button[icon=favorite]{
+      		color: #f44336;
+      }    
+      
+    	#addNote{
+    		position:fixed;
+    		bottom:28px;
+    		right:28px;
+    		background-color: #e57373;
+    		z-index: 1000;
+    	}      
     </style>
 
     <div class="card">
@@ -39,15 +51,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <template is="dom-repeat" items="{{userData}}" as="report">
           <paper-card heading="{{report.title}}" image alt="{{report.title}}" id="{{report.id}}" class="card">
             <div class="card-content">{{report.note}}</div>
-            <div>{{report.favorite}}</div>
             <div class="card-actions">
               <paper-icon-button icon="create" class="editData"></paper-icon-button>
-              <paper-icon-button icon="{{report.favorite}}" class="favoriteData"></paper-icon-button>
+              <paper-icon-button icon$="{{report.favorite}}" class="favoriteData" data-id$={{report.id}} on-click="_toggleFev"></paper-icon-button>
               <paper-icon-button icon="content-copy" class="copyData"></paper-icon-button>
               <paper-icon-button icon="delete" class="deleteData"></paper-icon-button>
             </div>
           </paper-card>          
-      </template>
+      </template> 
+      
+				<paper-fab id="addNote" icon="add" raised on-click="openDialog"></paper-fab>
 
   </template>
 
@@ -55,7 +68,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     class MyView1 extends Polymer.Element {
       static get is() { return 'my-view1'; }
       
-
       static get properties() {
         return {
           pageActive: {
@@ -66,9 +78,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           userName: {
             type: String
           },
-          userData: {
-            type: Array,
+          tempUserData: {
+            type: String,
             observer: '_updatedUserData'
+          },          
+          userData: {
+            type: String
           },
           userId: {
             type: String
@@ -77,43 +92,92 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }      
       
       _updatedUserData(){
-        var parsed = this.userData;
+        var myArr = this.tempUserData;
         var arr = [];
-        for(var x in parsed){
-          arr.push(parsed[x]);
-        }
-        
+         for(var x in myArr){
+           console.log(x);
+           arr.push(myArr[x]);
+         }
         this.userData = arr;
       }
       
       _pageActive() {
-        var thisUserData = document.querySelector('my-app').loggedUserData;
-        this.userId = thisUserData.uid;
-        //var ref = firebase.database().ref("users/" + this.userId).child("NoteList").child(id);
-        var ref = firebase.database().ref("users/" + this.userId);
-        ref.once("value")
-          .then(function(snapshot) {
-            var data = snapshot.val();
-            this.userData = data.NoteList;
-            this.userName = data.name;
-          }.bind(this));
+        if(this.pageActive == "view1"){
+          var thisUserData = document.querySelector('my-app').loggedUserData;
+          this.userId = thisUserData.uid;
+          var ref = firebase.database().ref("users/" + this.userId);
+          // ref.once("value")
+          //   .then(function(snapshot) {
+          //     var data = snapshot.val();
+          //     this.tempUserData = data.NoteList;
+          //     this.userName = data.name;
+          //   }.bind(this));  
+            ref.on('value', function(snapshot) {
+              var data = snapshot.val();
+              this.tempUserData = data.NoteList;
+              this.userName = data.name;
+            }.bind(this));            
+        }
       }
       
-      _toggleFev(id){
+      _toggleFev(event){
+        document.querySelector('paper-toast').text="";        
+        var id = event.target.getAttribute("data-id");
+        var thisElement = this.shadowRoot.querySelector('#'+ id + ' .favoriteData');        
         var thisUserData = document.querySelector('my-app').loggedUserData;
         this.userId = thisUserData.uid;        
-    			var ref = firebase.database().ref("users/" + this.userId).child("NoteList").child(id);
-    			ref.once("value")
-    				.then(function(snapshot) {
-    					var favoriteDataValue = snapshot.val();
-    					if(favoriteDataValue.favorite == "favorite-border"){
-    						snapshot.ref.update({"favorite": "favorite"});
-    						document.querySelector('paper-toast').show("Added to Favorited");
-    					  }
-    					  else{
-    						 snapshot.ref.update({"favorite": "favorite-border"});
-    					  }
-    			  });
+        var ref = firebase.database().ref("users/" + this.userId).child("NoteList").child(id);
+
+      		if(thisElement.getAttribute("icon") == "favorite-border"){
+            ref.update({"favorite": "favorite"}).then(function(){
+              ref.on('value', function(snapshot) {
+                thisElement.setAttribute("icon",  snapshot.val().favorite);
+                document.querySelector('paper-toast').show("Added favorite");
+              });
+            }).catch(function(error) {alert("Data could not be saved." + error);});    		  
+      		} 
+      		else if(thisElement.getAttribute("icon") == "favorite"){
+            ref.update({"favorite": "favorite-border"}).then(function(){
+              ref.on('value', function(snapshot) {
+                thisElement.setAttribute("icon",  snapshot.val().favorite);
+                document.querySelector('paper-toast').show("Removed favorite");
+              });
+            }).catch(function(error) {alert("Data could not be saved." + error);});       		  
+      		}
+      }
+      
+      addDataMain(){
+          var flag;
+          var getInput = Polymer.dom(this.root).querySelectorAll('#addNoteButton paper-input');
+          var thisUserData = document.querySelector('my-app').loggedUserData;
+          var myApp = document.querySelector('my-app');
+          this.userId = thisUserData.uid;          
+          
+      		for (var i = getInput.length-1; i >= 0 ; i--) {	
+      			if(getInput[i].invalid){
+      				getInput[i].validate(true);
+      				flag = 1;
+      			}
+      		}
+ 
+          if (flag != 1) {
+            var ref = firebase.database().ref("users/" + this.userId);
+            var noteCount = "noteCount_" + Math.round((new Date().getTime() / 1000));
+						var person = {  
+							"id": noteCount,
+							"title": myApp.noteTitle,
+							"note": myApp.noteText,
+							"favorite": "favorite-border"
+						};
+            ref.child("NoteList").child(noteCount).set(person).then(function(){
+                document.querySelector('paper-toast').show("Note created Successfully..!");
+                document.querySelector('my-app').cancelData();
+            }).catch(function(error) {alert("Data could not be saved." + error);}); ;						
+          }
+      }
+      
+      openDialog(){
+        document.querySelector('my-app').showDialog();
       }
 
     }

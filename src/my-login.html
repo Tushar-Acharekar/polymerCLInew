@@ -115,7 +115,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               <paper-button id="quickstart-sign-up" name="signUp" on-click="_signup">SignUp</paper-button>
 				  </div>
 				</paper-card>
-				<paper-toast id="loginToast"></paper-toast>
 			</div>
   </template>
 
@@ -127,11 +126,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return {
           username: {
             type: String,
-            value: ""
+            value: "acharekart@gmail.com"
           },
           password: {
             type: String,
-            value:""
+            value:"Pass@123"
           },
           class: {
             type: String
@@ -157,16 +156,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 document.querySelector('my-app').page = 'view1';
              }).catch(function(error) {
                if (error.code === 'auth/wrong-password') {
-                  thisElement.$.loginToast.show("Wrong password.");
+                  document.querySelector('paper-toast').show("Wrong password.");
                } 
                else if (error.code === 'auth/user-not-found') {
-                  thisElement.$.loginToast.show("user not found, Please SignUP");
+                  document.querySelector('paper-toast').show("user not found, Please SignUP");
                }
                else if (error.code === 'auth/invalid-email') {
-                  thisElement.$.loginToast.show("\u1F602 Please enter valid email & password");
+                  document.querySelector('paper-toast').show("\u1F602 Please enter valid email & password");
                }                
                else {
-                  thisElement.$.loginToast.show("errorCode :" + error.code);
+                  document.querySelector('paper-toast').show("errorCode :" + error.code);
                }
              });             
           }
